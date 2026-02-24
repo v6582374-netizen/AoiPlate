@@ -22,6 +22,8 @@
     visibleCount: 0,
     hiddenCount: 0,
     completedCount: 0,
+    inputOpen: false,
+    searchQuery: "",
     plateNodes: new Map(),
     completingIds: new Set(),
     completionFallbackTimers: new Map(),
@@ -41,7 +43,7 @@
     openPermissionButton: document.getElementById("openPermissionButton"),
     contextMenu: document.getElementById("contextMenu"),
     contextDeleteButton: document.getElementById("contextDeleteButton"),
-    inputModal: document.getElementById("inputModal"),
+    inputDock: document.getElementById("inputDock"),
     modalInput: document.getElementById("modalInput"),
     modalCancelButton: document.getElementById("modalCancelButton"),
     modalSubmitButton: document.getElementById("modalSubmitButton"),
@@ -138,6 +140,7 @@
     const margin = 14;
     const topReserved = 14;
     const gap = 5;
+    const bottomReserved = state.inputOpen ? 84 : 16;
     const golden = Math.PI * (3 - Math.sqrt(5));
     const radialStep = 18;
 
@@ -161,7 +164,7 @@
         const y = centerY + Math.sin(theta) * orbit;
 
         if (x - radius < margin || x + radius > width - margin) continue;
-        if (y - radius < topReserved || y + radius > height - margin) continue;
+        if (y - radius < topReserved || y + radius > height - margin - bottomReserved) continue;
 
         const overlap = placed.some((other) => {
           const dx = other.x - x;
@@ -178,7 +181,11 @@
 
       if (!chosen) {
         const fallbackX = clamp(centerX + ((jitter - 0.5) * width) / 3, radius + margin, width - margin - radius);
-        const fallbackY = clamp(centerY + ((0.5 - jitter) * height) / 3, radius + topReserved, height - margin - radius);
+        const fallbackY = clamp(
+          centerY + ((0.5 - jitter) * height) / 3,
+          radius + topReserved,
+          height - margin - bottomReserved - radius,
+        );
         chosen = { x: fallbackX, y: fallbackY };
       }
 
@@ -232,14 +239,22 @@
   };
 
   const closeInputModal = () => {
-    el.inputModal.classList.add("hidden");
-    el.inputModal.setAttribute("aria-hidden", "true");
+    state.inputOpen = false;
+    el.inputDock.classList.add("hidden");
+    el.inputDock.setAttribute("aria-hidden", "true");
     el.modalInput.value = "";
+    if (state.overlayVisible && state.viewMode === "explosion") {
+      renderExplosion(false);
+    }
   };
 
   const openInputModal = () => {
-    el.inputModal.classList.remove("hidden");
-    el.inputModal.setAttribute("aria-hidden", "false");
+    state.inputOpen = true;
+    el.inputDock.classList.remove("hidden");
+    el.inputDock.setAttribute("aria-hidden", "false");
+    if (state.overlayVisible && state.viewMode === "explosion") {
+      renderExplosion(false);
+    }
     window.setTimeout(() => {
       el.modalInput.focus();
       el.modalInput.select();
@@ -497,9 +512,21 @@
   const renderListMode = () => {
     removeEmptyPlate();
     const active = getActiveTodos();
+    const query = state.searchQuery.trim().toLocaleLowerCase();
+    const rows = query
+      ? active.filter((todo) => todo.text.toLocaleLowerCase().includes(query))
+      : active;
     el.listModeList.innerHTML = "";
 
-    active.forEach((todo) => {
+    if (rows.length === 0) {
+      const empty = document.createElement("li");
+      empty.className = "list-empty";
+      empty.textContent = query ? "没有匹配的未完成任务" : "暂无未完成任务";
+      el.listModeList.appendChild(empty);
+      return;
+    }
+
+    rows.forEach((todo) => {
       const row = document.createElement("li");
       row.className = "list-mode-row";
 
@@ -549,6 +576,9 @@
   const renderViewMode = () => {
     const isList = state.viewMode === "list";
     el.listModePanel.classList.toggle("hidden", !isList);
+    if (el.listSearch.value !== state.searchQuery) {
+      el.listSearch.value = state.searchQuery;
+    }
 
     if (isList) {
       renderListMode();
@@ -632,6 +662,8 @@
       closeInputModal();
       closeContextMenu();
       state.editingId = null;
+      state.searchQuery = "";
+      el.listSearch.value = "";
     }
   };
 
@@ -653,10 +685,8 @@
     closeContextMenu();
   });
 
-  el.inputModal.addEventListener("click", (event) => {
-    if (event.target === el.inputModal) {
-      closeInputModal();
-    }
+  el.inputDock.addEventListener("click", (event) => {
+    event.stopPropagation();
   });
 
   el.modalCancelButton.addEventListener("click", () => {
@@ -677,6 +707,13 @@
     }
   });
 
+  el.listSearch.addEventListener("input", () => {
+    state.searchQuery = el.listSearch.value || "";
+    if (state.viewMode === "list") {
+      renderListMode();
+    }
+  });
+
   document.addEventListener("click", (event) => {
     if (!el.contextMenu.contains(event.target)) {
       closeContextMenu();
@@ -687,14 +724,7 @@
     const target = event.target;
     if (!(target instanceof Element)) return;
 
-    if (target.closest(".plate, .plate-editor, .input-card, .list-mode-panel, .context-menu, .permission-banner")) {
-      return;
-    }
-
-    if (!el.inputModal.classList.contains("hidden")) {
-      if (target === el.inputModal) {
-        closeInputModal();
-      }
+    if (target.closest(".plate, .plate-editor, .input-dock, .list-mode-panel, .context-menu, .permission-banner")) {
       return;
     }
 
@@ -717,7 +747,7 @@
         event.preventDefault();
         return;
       }
-      if (!el.inputModal.classList.contains("hidden")) {
+      if (state.inputOpen) {
         closeInputModal();
         event.preventDefault();
         return;
@@ -746,6 +776,9 @@
     }
 
     if (key === listHotkey) {
+      if (state.inputOpen) {
+        closeInputModal();
+      }
       const next = state.viewMode === "list" ? "explosion" : "list";
       post("set_view_mode", { mode: next });
       event.preventDefault();

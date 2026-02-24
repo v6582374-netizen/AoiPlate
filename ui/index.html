@@ -19,7 +19,7 @@
       <section id="listModePanel" class="list-mode-panel hidden" aria-label="List Mode">
         <div class="list-head">
           <h2>全部未完成任务</h2>
-          <input id="listSearch" type="text" placeholder="搜索（预留）" disabled />
+          <input id="listSearch" type="text" placeholder="搜索未完成任务" />
         </div>
         <ul id="listModeList" class="list-mode-list"></ul>
       </section>
@@ -33,10 +33,9 @@
         <button id="contextDeleteButton" type="button">删除此任务</button>
       </div>
 
-      <div id="inputModal" class="input-modal hidden" aria-hidden="true">
-        <div class="input-card">
-          <h3>新增代办</h3>
-          <input id="modalInput" type="text" maxlength="120" placeholder="输入任务后回车" />
+      <div id="inputDock" class="input-dock hidden" aria-hidden="true">
+        <div class="input-dock-inner">
+          <input id="modalInput" type="text" maxlength="120" placeholder="新增代办，输入后回车" />
           <div class="input-actions">
             <button id="modalCancelButton" type="button">取消</button>
             <button id="modalSubmitButton" type="button">保存</button>

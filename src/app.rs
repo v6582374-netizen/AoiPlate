@@ -1,5 +1,6 @@
 use std::fs::{self, File, OpenOptions};
 use std::io;
+use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::AtomicU8;
@@ -11,7 +12,7 @@ use auto_launch::{AutoLaunch, AutoLaunchBuilder, MacOSLaunchMode};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use tao::event::{Event, WindowEvent};
-use tao::event_loop::{ControlFlow, EventLoopBuilder, EventLoopProxy};
+use tao::event_loop::{ControlFlow, EventLoopBuilder, EventLoopProxy, EventLoopWindowTarget};
 use uuid::Uuid;
 
 use crate::config::{AppConfig, ConfigStore, sanitize_trigger_key};
@@ -190,6 +191,7 @@ pub fn run() -> Result<()> {
     {
         use tao::platform::macos::{ActivationPolicy, EventLoopExtMacOS};
         event_loop.set_activation_policy(ActivationPolicy::Accessory);
+        event_loop.set_dock_visibility(false);
     }
 
     let proxy = event_loop.create_proxy();
@@ -240,13 +242,25 @@ pub fn run() -> Result<()> {
     push_state_to_ui(&panel, &runtime);
     push_permissions_to_ui(&panel, &runtime.permissions);
 
-    event_loop.run(move |event, _, control_flow| {
+    event_loop.run(move |event, event_loop_window_target, control_flow| {
         *control_flow = ControlFlow::Wait;
 
         match event {
             Event::UserEvent(user_event) => match user_event {
-                UserEvent::HotkeyTrigger => toggle_overlay(&panel, &mut runtime, &proxy),
-                UserEvent::HideOverlay => hide_overlay(&panel, &mut runtime, &proxy),
+                UserEvent::HotkeyTrigger => toggle_overlay(
+                    &panel,
+                    event_loop_window_target,
+                    &mut runtime,
+                    &proxy,
+                    &logger,
+                ),
+                UserEvent::HideOverlay => hide_overlay(
+                    &panel,
+                    event_loop_window_target,
+                    &mut runtime,
+                    &proxy,
+                    &logger,
+                ),
                 UserEvent::FinalizeHide(token) => {
                     if !runtime.overlay_visible && token == runtime.hide_token {
                         panel.hide_native();
@@ -277,7 +291,13 @@ pub fn run() -> Result<()> {
                     }
                 }
                 UserEvent::TrayCommand(cmd) => match cmd {
-                    TrayCommand::TogglePanel => toggle_overlay(&panel, &mut runtime, &proxy),
+                    TrayCommand::TogglePanel => toggle_overlay(
+                        &panel,
+                        event_loop_window_target,
+                        &mut runtime,
+                        &proxy,
+                        &logger,
+                    ),
                     TrayCommand::OpenPermissions => {
                         if let Err(err) = permissions::open_permissions_settings() {
                             logger.log_error(&format!("open settings failed: {err:#}"));
@@ -328,7 +348,13 @@ pub fn run() -> Result<()> {
                 event: WindowEvent::CloseRequested,
                 ..
             } if window_id == panel_window_id => {
-                hide_overlay(&panel, &mut runtime, &proxy);
+                hide_overlay(
+                    &panel,
+                    event_loop_window_target,
+                    &mut runtime,
+                    &proxy,
+                    &logger,
+                );
             }
             _ => {}
         }
@@ -465,23 +491,42 @@ fn handle_ipc(
     Ok(())
 }
 
-fn toggle_overlay(panel: &Panel, runtime: &mut RuntimeState, proxy: &EventLoopProxy<UserEvent>) {
+fn toggle_overlay(
+    panel: &Panel,
+    event_loop_window_target: &EventLoopWindowTarget<UserEvent>,
+    runtime: &mut RuntimeState,
+    proxy: &EventLoopProxy<UserEvent>,
+    logger: &ErrorLogger,
+) {
     if runtime.overlay_visible {
-        hide_overlay(panel, runtime, proxy);
+        hide_overlay(panel, event_loop_window_target, runtime, proxy, logger);
     } else {
-        show_overlay(panel, runtime);
+        show_overlay(panel, event_loop_window_target, runtime, logger);
     }
 }
 
-fn show_overlay(panel: &Panel, runtime: &mut RuntimeState) {
+fn show_overlay(
+    panel: &Panel,
+    event_loop_window_target: &EventLoopWindowTarget<UserEvent>,
+    runtime: &mut RuntimeState,
+    logger: &ErrorLogger,
+) {
     runtime.overlay_visible = true;
+    apply_dock_state_for_overlay(event_loop_window_target, true, logger);
     panel.show();
     panel.set_visible_animated(true);
     push_state_to_ui(panel, runtime);
 }
 
-fn hide_overlay(panel: &Panel, runtime: &mut RuntimeState, proxy: &EventLoopProxy<UserEvent>) {
+fn hide_overlay(
+    panel: &Panel,
+    event_loop_window_target: &EventLoopWindowTarget<UserEvent>,
+    runtime: &mut RuntimeState,
+    proxy: &EventLoopProxy<UserEvent>,
+    logger: &ErrorLogger,
+) {
     runtime.overlay_visible = false;
+    apply_dock_state_for_overlay(event_loop_window_target, false, logger);
     runtime.hide_token = runtime.hide_token.wrapping_add(1);
     let token = runtime.hide_token;
 
@@ -494,6 +539,36 @@ fn hide_overlay(panel: &Panel, runtime: &mut RuntimeState, proxy: &EventLoopProx
     });
 
     push_state_to_ui(panel, runtime);
+}
+
+#[cfg(target_os = "macos")]
+fn apply_dock_state_for_overlay(
+    event_loop_window_target: &EventLoopWindowTarget<UserEvent>,
+    overlay_visible: bool,
+    logger: &ErrorLogger,
+) {
+    use tao::platform::macos::{ActivationPolicy, EventLoopWindowTargetExtMacOS};
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        if overlay_visible {
+            event_loop_window_target.set_activation_policy_at_runtime(ActivationPolicy::Regular);
+            event_loop_window_target.set_dock_visibility(true);
+        } else {
+            event_loop_window_target.set_dock_visibility(false);
+            event_loop_window_target.set_activation_policy_at_runtime(ActivationPolicy::Accessory);
+        }
+    }));
+
+    if result.is_err() {
+        logger.log_error("dock visibility toggle failed unexpectedly");
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn apply_dock_state_for_overlay(
+    _event_loop_window_target: &EventLoopWindowTarget<UserEvent>,
+    _overlay_visible: bool,
+    _logger: &ErrorLogger,
+) {
 }
 
 fn push_state_to_ui(panel: &Panel, runtime: &RuntimeState) {

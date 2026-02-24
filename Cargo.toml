@@ -1,6 +1,6 @@
 [package]
 name = "todo_lite"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
 description = "AoiPlate: elegant macOS explosion-stage todo app"
 license = "MIT"
@@ -30,4 +30,5 @@ identifier = "com.shiwen.aoiplate"
 short_description = "Elegant explosion-stage todo app for macOS"
 category = "Productivity"
 osx_minimum_system_version = "14.0"
+icon = ["assets/icons/AoiPlate.icns"]
 resources = ["ui"]

@@ -1,101 +1,89 @@
-# AoiPlate 操作手册（macOS）
+# AoiPlate 1.0（macOS）操作手册
 
-AoiPlate 是一个为 **极简待办** 设计的 macOS 菜单栏应用。  
-你可以在任何界面里通过 **双击字母键（默认 `J`）** 拉起“盘子爆炸舞台”，快速查看和处理任务。
+AoiPlate 是一款极简、轻量的菜单栏待办应用。  
+你可以在任意界面通过双击触发键（默认 `J`）呼出“爆炸舞台”，用盘子直接管理任务。
 
-## 1. 你能做什么
-- 双击 `J` 打开/收起舞台
-- 盘子大小按时间权重变化（越早创建越大）
-- `Cmd + 单击` 任务盘子：标记完成并淡出
-- 双击盘子文字：就地编辑
-- 右键盘子：删除任务
-- 按 `N`：新增任务
+## 1. 核心特性
+- 全局双击 `J` 打开/收起舞台
+- 舞台打开时显示 Dock 图标，收起后自动隐藏 Dock 图标
+- 盘子大小按时间权重自动变化（越早创建越大）
+- `Cmd + 单击` 盘子：标记完成并淡出
+- 双击盘子：原位编辑
+- 右键盘子：删除
+- 按 `N`：在舞台底部打开新增输入栏
 - 按 `M`：切换爆炸模式 / 列表模式
+- 列表模式支持实时搜索未完成任务
 
-## 2. 快速开始（普通用户）
-### 2.1 启动应用
-在项目目录运行：
+## 2. 普通用户安装（推荐）
+1. 从 GitHub Release 下载 `AoiPlate.dmg`
+2. 双击打开 DMG
+3. 将 `AoiPlate.app` 拖到 `Applications`
+4. 从“应用程序”中启动 `AoiPlate`
 
-```bash
-cargo run
-```
+备用包：
+- `AoiPlate.app.zip`：解压后得到 `.app`
+- `AoiPlate-macos-arm64.tar.gz`：终端用户使用
 
-看到菜单栏图标后，说明应用已常驻。
+## 3. 首次启动与权限
+如果双击 `J` 没反应，请在系统隐私设置中开启：
+- 输入监听
+- 辅助功能
 
-### 2.2 首次权限设置（非常重要）
-如果双击 `J` 没反应，请在系统里开启权限：
-- `输入监听`
-- `辅助功能`
+可通过菜单栏图标菜单中的“打开权限设置”快速跳转。
 
-你可以通过菜单栏图标菜单里的“打开权限设置”直接跳转。
+## 4. 日常使用
+### 4.1 打开/关闭舞台
+- 双击 `J`
+- 或菜单栏点击“显示 / 隐藏 AoiPlate”
+- `Esc` 或点击空白处也可收起
 
-### 2.3 第一次打开舞台
-1. 在任意界面双击 `J`
-2. 舞台出现后按 `N` 新建任务
-3. 回车保存
+### 4.2 新增任务
+- 舞台中按 `N`
+- 底部输入栏输入内容
+- 回车保存（或点“保存”）
 
-## 3. 日常使用说明
-### 3.1 添加任务
-- 打开舞台后按 `N`
-- 输入一行文字，按回车保存
+### 4.3 完成任务
+- 按住 `Cmd` 单击盘子
+- 盘子 700ms 左右淡出，剩余任务自动重排
 
-### 3.2 完成任务
-- 按住 `Cmd`，单击任务盘子
-- 盘子会淡出，剩余任务自动重排
-
-### 3.3 编辑任务
-- 双击盘子文字进入编辑
+### 4.4 编辑任务
+- 双击盘子进入编辑
 - `Enter` 保存，`Esc` 取消
 
-### 3.4 删除任务
-- 右键盘子，点击“删除此任务”
+### 4.5 列表模式与搜索
+- 按 `M` 进入列表模式
+- 右上角搜索框实时过滤“未完成任务”
+- 再按 `M` 返回爆炸模式
 
-### 3.5 收起舞台
-- 双击 `J`
-- 或按 `Esc`
-- 或点击空白区域
-
-## 4. 安全加固（当前版本）
-- IPC 请求体大小限制（防止异常超大消息导致资源滥用）
-- 任务文本在后端强制长度限制（最多 120 字符）
-- 任务 ID 强校验（必须为合法 UUID）
-- 前端启用严格 CSP（禁止外部脚本/连接/对象加载）
-
-## 5. 数据与迁移
+## 5. 数据存储与迁移
 数据目录：
 - `~/Library/Application Support/AoiPlate/todos.json`
 - `~/Library/Application Support/AoiPlate/config.json`
 - `~/Library/Application Support/AoiPlate/error.log`
 
-迁移规则：
-- 首次启动会自动尝试将旧版 `TodoLite` 的数据迁移到 `AoiPlate`
-- 迁移失败不会阻塞启动，但会在日志里记录
+旧版本 `TodoLite` 目录会在首次启动时自动迁移到 `AoiPlate`。
 
 ## 6. 常见问题
-### Q1：双击 `J` 没反应
-- 先检查“输入监听”权限是否已开启
-- 再检查菜单栏图标是否仍在（应用是否在运行）
+### Q1：双击 `J` 无反应
+- 检查输入监听/辅助功能权限
+- 检查菜单栏图标是否存在（应用是否在运行）
 
-### Q2：我担心数据丢失
-- 所有数据都在本地 JSON 文件
-- 可以直接备份 `~/Library/Application Support/AoiPlate/` 整个目录
+### Q2：下载后双击 `AoiPlate-macos-arm64` 报“UTF-8 文本编码不适用”
+- 这是 CLI 二进制，不是 Finder 双击启动的 GUI 包
+- 请改用 `AoiPlate.dmg` 或 `AoiPlate.app.zip`
 
-### Q3：看不到任务盘子
-- 先按 `N` 新建任务
-- 若仍无显示，退出后重新 `cargo run`
+### Q3：任务看不到
+- 先按 `N` 新建一个任务
+- 或按 `M` 看列表模式是否有任务
 
-### Q4：下载后双击提示“文本编码 UTF-8 不适用”
-- 这是因为你打开了 CLI 二进制（`AoiPlate-macos-arm64`），它不是 Finder 可直接双击的 GUI 应用
-- 普通用户请下载并解压 `AoiPlate.app.zip`，再双击 `AoiPlate.app`
-- 若使用 CLI 二进制，请在终端运行：`./AoiPlate-macos-arm64`
-
-## 7. 开发者命令
+## 7. 开发与构建
 ```bash
 cargo check
 cargo build --release
+cargo bundle --release
 ```
 
-推荐的本地环境工具：
+推荐虚拟环境：
 ```bash
 brew install mise direnv
 cd /Users/shiwen/Desktop/Todo_lite
@@ -103,27 +91,16 @@ mise trust .mise.toml
 direnv allow
 ```
 
-## 8. 上传可执行文件（建议流程）
-一键构建全部 Release 资产（推荐）：
-
+## 8. 生成 1.0 Release 资产
+一键构建：
 ```bash
 ./scripts/build_release_assets_macos.sh
 ```
 
-产物说明：
-- `dist/AoiPlate.app.zip`：普通用户下载后可双击运行（推荐上传）
-- `dist/AoiPlate-macos-arm64.tar.gz`：CLI 包，适合终端用户
-- `dist/SHA256SUMS.txt`：校验文件
+产物位于 `dist/`：
+- `AoiPlate.dmg`（主安装包）
+- `AoiPlate.app.zip`
+- `AoiPlate-macos-arm64.tar.gz`
+- `SHA256SUMS.txt`
 
-如需手工构建：
-
-```bash
-cargo build --release
-cargo bundle --release
-mkdir -p dist
-cp target/release/AoiPlate dist/AoiPlate-macos-arm64
-tar -czf dist/AoiPlate-macos-arm64.tar.gz -C dist AoiPlate-macos-arm64
-ditto -c -k --sequesterRsrc --keepParent target/release/bundle/osx/AoiPlate.app dist/AoiPlate.app.zip
-```
-
-上传到 GitHub Release 时，优先上传 `dist/AoiPlate.app.zip`。
+发布到 GitHub Release 时，建议将版本号设置为：`v1.0.0`。
