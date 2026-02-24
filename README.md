@@ -84,6 +84,11 @@ cargo run
 - 先按 `N` 新建任务
 - 若仍无显示，退出后重新 `cargo run`
 
+### Q4：下载后双击提示“文本编码 UTF-8 不适用”
+- 这是因为你打开了 CLI 二进制（`AoiPlate-macos-arm64`），它不是 Finder 可直接双击的 GUI 应用
+- 普通用户请下载并解压 `AoiPlate.app.zip`，再双击 `AoiPlate.app`
+- 若使用 CLI 二进制，请在终端运行：`./AoiPlate-macos-arm64`
+
 ## 7. 开发者命令
 ```bash
 cargo check
@@ -99,20 +104,26 @@ direnv allow
 ```
 
 ## 8. 上传可执行文件（建议流程）
-构建可执行文件：
+一键构建全部 Release 资产（推荐）：
+
+```bash
+./scripts/build_release_assets_macos.sh
+```
+
+产物说明：
+- `dist/AoiPlate.app.zip`：普通用户下载后可双击运行（推荐上传）
+- `dist/AoiPlate-macos-arm64.tar.gz`：CLI 包，适合终端用户
+- `dist/SHA256SUMS.txt`：校验文件
+
+如需手工构建：
 
 ```bash
 cargo build --release
+cargo bundle --release
 mkdir -p dist
 cp target/release/AoiPlate dist/AoiPlate-macos-arm64
 tar -czf dist/AoiPlate-macos-arm64.tar.gz -C dist AoiPlate-macos-arm64
+ditto -c -k --sequesterRsrc --keepParent target/release/bundle/osx/AoiPlate.app dist/AoiPlate.app.zip
 ```
 
-如果你已经安装 `cargo-bundle`，也可生成 `.app`：
-
-```bash
-cargo install cargo-bundle
-cargo bundle --release
-```
-
-然后将 `dist/AoiPlate-macos-arm64.tar.gz`（或 `.app` 压缩包）上传到 GitHub Release 的 Assets。
+上传到 GitHub Release 时，优先上传 `dist/AoiPlate.app.zip`。
