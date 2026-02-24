@@ -237,19 +237,19 @@ html.overlay-visible .stage {
   border-radius: 10px;
   padding: 10px;
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 10px;
-  align-items: center;
+  align-items: start;
   margin-bottom: 8px;
 }
 
 .list-text {
   color: rgba(227, 234, 246, 0.94);
   font-size: 14px;
+  line-height: 1.45;
   min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .list-row-btn {
@@ -283,15 +283,33 @@ html.overlay-visible .stage {
   right: 14px;
   bottom: 14px;
   z-index: 50;
-  display: inline-flex;
+  display: inline-grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 8px;
   border: 1px solid rgba(228, 200, 140, 0.38);
   background: rgba(27, 30, 39, 0.86);
   border-radius: 10px;
-  padding: 8px 10px;
+  padding: 8px;
   font-size: 12px;
   color: rgba(243, 234, 213, 0.94);
+}
+
+.permission-close {
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(208, 184, 131, 0.34);
+  border-radius: 7px;
+  background: rgba(55, 63, 81, 0.55);
+  color: rgba(239, 227, 198, 0.92);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+}
+
+.permission-close:hover {
+  background: rgba(71, 82, 106, 0.68);
 }
 
 .input-actions button,
@@ -313,6 +331,16 @@ html.overlay-visible .stage {
   background: linear-gradient(165deg, rgba(83, 97, 125, 0.68), rgba(43, 52, 72, 0.84));
 }
 
+.permission-banner .permission-close {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 7px;
+  font-size: 14px;
+  line-height: 1;
+  background: rgba(55, 63, 81, 0.55);
+}
+
 .context-menu {
   position: absolute;
   z-index: 60;
@@ -327,6 +355,55 @@ html.overlay-visible .stage {
 .context-menu button {
   width: 100%;
   text-align: left;
+}
+
+.overflow-editor {
+  position: absolute;
+  z-index: 68;
+  width: min(340px, calc(100vw - 26px));
+  border-radius: 12px;
+  border: 1px solid rgba(218, 194, 141, 0.35);
+  background: linear-gradient(165deg, rgba(19, 24, 34, 0.92), rgba(23, 30, 44, 0.9));
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.42);
+  padding: 10px;
+}
+
+.overflow-editor textarea {
+  width: 100%;
+  min-height: 112px;
+  max-height: 220px;
+  resize: vertical;
+  border-radius: 10px;
+  border: 1px solid rgba(214, 192, 138, 0.35);
+  background: rgba(243, 248, 255, 0.94);
+  color: #10223a;
+  padding: 10px;
+  font-size: 13px;
+  line-height: 1.42;
+  font-family: var(--font-geek-mono);
+  outline: none;
+}
+
+.overflow-editor-actions {
+  margin-top: 9px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.overflow-editor-actions button {
+  border: 1px solid rgba(221, 206, 168, 0.38);
+  color: #e9ecf5;
+  background: linear-gradient(165deg, rgba(66, 77, 100, 0.5), rgba(33, 40, 56, 0.72));
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.overflow-editor-actions button:hover {
+  background: linear-gradient(165deg, rgba(83, 97, 125, 0.68), rgba(43, 52, 72, 0.84));
 }
 
 .input-dock {

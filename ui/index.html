@@ -25,8 +25,28 @@
       </section>
 
       <div id="permissionBanner" class="permission-banner hidden">
+        <button
+          id="permissionCloseButton"
+          class="permission-close"
+          type="button"
+          aria-label="关闭权限提示"
+        >
+          ×
+        </button>
         <span>需要开启“输入监听”和“辅助功能”以支持全局触发。</span>
         <button id="openPermissionButton" type="button">打开权限设置</button>
+      </div>
+
+      <div id="overflowEditor" class="overflow-editor hidden" aria-hidden="true">
+        <textarea
+          id="overflowEditorInput"
+          maxlength="240"
+          placeholder="编辑完整任务文本"
+        ></textarea>
+        <div class="overflow-editor-actions">
+          <button id="overflowEditorCancel" type="button">取消</button>
+          <button id="overflowEditorSave" type="button">保存</button>
+        </div>
       </div>
 
       <div id="contextMenu" class="context-menu hidden">

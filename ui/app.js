@@ -7,8 +7,8 @@
       launch_at_login: true,
       hide_completed: false,
       max_visible_plates: 40,
-      min_diameter_px: 84,
-      max_diameter_px: 220,
+      min_diameter_px: 168,
+      max_diameter_px: 440,
       complete_fade_ms: 700,
       input_hotkey: "N",
       list_mode_hotkey: "M",
@@ -24,6 +24,9 @@
     completedCount: 0,
     inputOpen: false,
     searchQuery: "",
+    permissionBannerDismissed: false,
+    overflowEditorOpen: false,
+    overflowEditorTodoId: null,
     plateNodes: new Map(),
     completingIds: new Set(),
     completionFallbackTimers: new Map(),
@@ -40,7 +43,12 @@
     listModeList: document.getElementById("listModeList"),
     listSearch: document.getElementById("listSearch"),
     permissionBanner: document.getElementById("permissionBanner"),
+    permissionCloseButton: document.getElementById("permissionCloseButton"),
     openPermissionButton: document.getElementById("openPermissionButton"),
+    overflowEditor: document.getElementById("overflowEditor"),
+    overflowEditorInput: document.getElementById("overflowEditorInput"),
+    overflowEditorCancel: document.getElementById("overflowEditorCancel"),
+    overflowEditorSave: document.getElementById("overflowEditorSave"),
     contextMenu: document.getElementById("contextMenu"),
     contextDeleteButton: document.getElementById("contextDeleteButton"),
     inputDock: document.getElementById("inputDock"),
@@ -102,11 +110,11 @@
   };
 
   const buildDiameterMap = (visibleTodos) => {
-    const minDiameterRaw = clamp(Number(state.config.min_diameter_px) || 84, 64, 240);
-    const maxDiameterRaw = clamp(Number(state.config.max_diameter_px) || 220, 120, 420);
+    const minDiameterRaw = clamp(Number(state.config.min_diameter_px) || 168, 168, 520);
+    const maxDiameterRaw = clamp(Number(state.config.max_diameter_px) || 440, 320, 760);
     const densityScale = 0.78;
-    const minDiameter = clamp(Math.round(minDiameterRaw * densityScale), 64, 220);
-    const maxDiameter = clamp(Math.round(maxDiameterRaw * densityScale), 110, 330);
+    const minDiameter = clamp(Math.round(minDiameterRaw * densityScale), 131, 420);
+    const maxDiameter = clamp(Math.round(maxDiameterRaw * densityScale), 250, 620);
     const low = Math.min(minDiameter, maxDiameter);
     const high = Math.max(minDiameter, maxDiameter);
 
@@ -238,17 +246,105 @@
     el.contextMenu.style.top = `${y + 6}px`;
   };
 
+  const closeOverflowEditor = () => {
+    state.overflowEditorOpen = false;
+    state.overflowEditorTodoId = null;
+    el.overflowEditor.classList.add("hidden");
+    el.overflowEditor.setAttribute("aria-hidden", "true");
+    el.overflowEditor.style.left = "";
+    el.overflowEditor.style.top = "";
+  };
+
+  const positionOverflowEditor = (plate) => {
+    if (!plate) return;
+    const gap = 10;
+    const margin = 12;
+    const stageRect = el.stage.getBoundingClientRect();
+    const plateRect = plate.getBoundingClientRect();
+    const editorRect = el.overflowEditor.getBoundingClientRect();
+
+    let x = plateRect.right + gap;
+    if (x + editorRect.width > stageRect.width - margin) {
+      x = plateRect.left - editorRect.width - gap;
+    }
+    x = clamp(x, margin, stageRect.width - editorRect.width - margin);
+
+    let y = plateRect.top + (plateRect.height - editorRect.height) / 2;
+    y = clamp(y, margin, stageRect.height - editorRect.height - margin);
+
+    el.overflowEditor.style.left = `${Math.round(x)}px`;
+    el.overflowEditor.style.top = `${Math.round(y)}px`;
+  };
+
+  const openOverflowEditor = (todoId, plate) => {
+    const todo = state.todos.find((item) => item.id === todoId && !item.completed);
+    if (!todo || !plate) return;
+
+    if (state.editingId) {
+      state.editingId = null;
+    }
+    if (state.inputOpen) {
+      closeInputModal();
+    }
+    closeContextMenu();
+
+    state.overflowEditorOpen = true;
+    state.overflowEditorTodoId = todoId;
+
+    el.overflowEditorInput.value = todo.text;
+    el.overflowEditor.classList.remove("hidden");
+    el.overflowEditor.setAttribute("aria-hidden", "false");
+
+    window.requestAnimationFrame(() => {
+      if (!state.overflowEditorOpen || state.overflowEditorTodoId !== todoId) return;
+      positionOverflowEditor(plate);
+      el.overflowEditorInput.focus();
+      el.overflowEditorInput.select();
+    });
+  };
+
+  const submitOverflowEditor = () => {
+    if (!state.overflowEditorOpen || !state.overflowEditorTodoId) return;
+
+    const text = sanitizeText(el.overflowEditorInput.value || "");
+    if (!text) {
+      closeOverflowEditor();
+      return;
+    }
+
+    post("edit_todo", { id: state.overflowEditorTodoId, text });
+    closeOverflowEditor();
+  };
+
+  const isPlateTextOverflowing = (plate, text) => {
+    const label = plate.querySelector(".plate-label");
+    if (!label) return false;
+    const heightOverflow = label.scrollHeight > label.clientHeight + 1;
+    const widthOverflow = label.scrollWidth > label.clientWidth + 1;
+    const fontSize = Number.parseFloat(window.getComputedStyle(label).fontSize) || 14;
+    const charsPerLine = Math.max(6, Math.floor(label.clientWidth / (fontSize * 0.58)));
+    const approxCapacity = charsPerLine * 2;
+    const lengthOverflow = (text || "").length > approxCapacity;
+    return heightOverflow || widthOverflow || lengthOverflow;
+  };
+
   const closeInputModal = () => {
     state.inputOpen = false;
     el.inputDock.classList.add("hidden");
     el.inputDock.setAttribute("aria-hidden", "true");
     el.modalInput.value = "";
+    if (state.overflowEditorOpen) {
+      closeOverflowEditor();
+    }
     if (state.overlayVisible && state.viewMode === "explosion") {
       renderExplosion(false);
     }
   };
 
   const openInputModal = () => {
+    if (state.overflowEditorOpen) {
+      closeOverflowEditor();
+    }
     state.inputOpen = true;
     el.inputDock.classList.remove("hidden");
     el.inputDock.setAttribute("aria-hidden", "false");
@@ -281,6 +377,9 @@
 
   const triggerComplete = (id) => {
     if (state.completingIds.has(id)) return;
+    if (state.overflowEditorTodoId === id) {
+      closeOverflowEditor();
+    }
 
     state.completingIds.add(id);
     renderExplosion(false);
@@ -379,8 +478,14 @@
       if (event.metaKey) return;
       const id = plate.dataset.id;
       if (!id || state.completingIds.has(id)) return;
-      state.editingId = id;
-      renderExplosion(false);
+      const shouldUseOverflowEditor = plate.dataset.overflow === "1";
+      if (shouldUseOverflowEditor) {
+        openOverflowEditor(id, plate);
+      } else {
+        closeOverflowEditor();
+        state.editingId = id;
+        renderExplosion(false);
+      }
       event.preventDefault();
       event.stopPropagation();
     });
@@ -415,7 +520,7 @@
       state.emptyPlateNode = node;
     }
 
-    const diameter = clamp((Number(state.config.min_diameter_px) || 84) + 42, 126, 200);
+    const diameter = clamp((Number(state.config.min_diameter_px) || 168) + 72, 220, 340);
     const typo = plateTypography(diameter);
     node.style.width = `${diameter}px`;
     node.style.height = `${diameter}px`;
@@ -453,6 +558,9 @@
         state.plateNodes.delete(id);
         state.completingIds.delete(id);
         clearCompletionFallback(id);
+        if (state.overflowEditorTodoId === id) {
+          closeOverflowEditor();
+        }
       }
     }
 
@@ -497,6 +605,7 @@
       plate.classList.toggle("plate--editing", state.editingId === todo.id);
 
       mountPlateContent(plate, todo);
+      plate.dataset.overflow = isPlateTextOverflowing(plate, todo.text) ? "1" : "0";
 
       if (isNew || shouldForce) {
         plate.classList.remove("plate--placed");
@@ -505,6 +614,10 @@
         });
       } else {
         plate.classList.add("plate--placed");
+      }
+
+      if (state.overflowEditorOpen && state.overflowEditorTodoId === todo.id) {
+        positionOverflowEditor(plate);
       }
     });
   };
@@ -566,7 +679,11 @@
   const renderPermissions = () => {
     const allGranted =
       state.permissions.input_monitoring && state.permissions.accessibility;
-    el.permissionBanner.classList.toggle("hidden", allGranted);
+    if (allGranted) {
+      el.permissionBanner.classList.add("hidden");
+      return;
+    }
+    el.permissionBanner.classList.toggle("hidden", state.permissionBannerDismissed);
   };
 
   const renderStatus = () => {
@@ -576,6 +693,9 @@
   const renderViewMode = () => {
     const isList = state.viewMode === "list";
     el.listModePanel.classList.toggle("hidden", !isList);
+    if (isList && state.overflowEditorOpen) {
+      closeOverflowEditor();
+    }
     if (el.listSearch.value !== state.searchQuery) {
       el.listSearch.value = state.searchQuery;
     }
@@ -661,6 +781,7 @@
     if (!state.overlayVisible) {
       closeInputModal();
       closeContextMenu();
+      closeOverflowEditor();
       state.editingId = null;
       state.searchQuery = "";
       el.listSearch.value = "";
@@ -674,12 +795,21 @@
     }
   }
 
+  el.permissionCloseButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    state.permissionBannerDismissed = true;
+    renderPermissions();
+  });
+
   el.openPermissionButton.addEventListener("click", () => {
     post("open_permissions");
   });
 
   el.contextDeleteButton.addEventListener("click", () => {
     if (state.contextTargetId) {
+      if (state.overflowEditorTodoId === state.contextTargetId) {
+        closeOverflowEditor();
+      }
       post("delete_todo", { id: state.contextTargetId });
     }
     closeContextMenu();
@@ -714,6 +844,26 @@
     }
   });
 
+  el.overflowEditorCancel.addEventListener("click", () => {
+    closeOverflowEditor();
+  });
+
+  el.overflowEditorSave.addEventListener("click", () => {
+    submitOverflowEditor();
+  });
+
+  el.overflowEditorInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      submitOverflowEditor();
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeOverflowEditor();
+    }
+  });
+
   document.addEventListener("click", (event) => {
     if (!el.contextMenu.contains(event.target)) {
       closeContextMenu();
@@ -724,7 +874,12 @@
     const target = event.target;
     if (!(target instanceof Element)) return;
 
-    if (target.closest(".plate, .plate-editor, .input-dock, .list-mode-panel, .context-menu, .permission-banner")) {
+    if (target.closest(".plate, .plate-editor, .input-dock, .overflow-editor, .list-mode-panel, .context-menu, .permission-banner")) {
+      return;
+    }
+
+    if (state.overflowEditorOpen) {
+      closeOverflowEditor();
       return;
     }
 
@@ -734,6 +889,14 @@
   window.addEventListener("resize", () => {
     if (state.overlayVisible) {
       renderExplosion(false);
+    }
+    if (state.overflowEditorOpen && state.overflowEditorTodoId) {
+      const anchorPlate = state.plateNodes.get(state.overflowEditorTodoId);
+      if (anchorPlate) {
+        positionOverflowEditor(anchorPlate);
+      } else {
+        closeOverflowEditor();
+      }
     }
     closeContextMenu();
   });
@@ -749,6 +912,11 @@
       }
       if (state.inputOpen) {
         closeInputModal();
+        event.preventDefault();
+        return;
+      }
+      if (state.overflowEditorOpen) {
+        closeOverflowEditor();
         event.preventDefault();
         return;
       }
@@ -776,6 +944,9 @@
     }
 
     if (key === listHotkey) {
+      if (state.overflowEditorOpen) {
+        closeOverflowEditor();
+      }
       if (state.inputOpen) {
         closeInputModal();
       }
