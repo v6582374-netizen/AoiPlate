@@ -38,6 +38,10 @@
       </div>
 
       <div id="overflowEditor" class="overflow-editor hidden" aria-hidden="true">
+        <div class="overflow-editor-head">
+          <strong>完整编辑</strong>
+          <span>Enter 保存 · Shift+Enter 换行</span>
+        </div>
         <textarea
           id="overflowEditorInput"
           maxlength="240"
@@ -55,7 +59,11 @@
 
       <div id="inputDock" class="input-dock hidden" aria-hidden="true">
         <div class="input-dock-inner">
-          <input id="modalInput" type="text" maxlength="120" placeholder="新增代办，输入后回车" />
+          <div class="input-dock-head">
+            <strong>新增代办</strong>
+            <span>N 快速唤起 · Enter 保存</span>
+          </div>
+          <input id="modalInput" type="text" maxlength="120" placeholder="把此刻想到的事写下来" />
           <div class="input-actions">
             <button id="modalCancelButton" type="button">取消</button>
             <button id="modalSubmitButton" type="button">保存</button>

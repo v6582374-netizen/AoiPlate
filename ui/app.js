@@ -27,6 +27,8 @@
     permissionBannerDismissed: false,
     overflowEditorOpen: false,
     overflowEditorTodoId: null,
+    modalImeComposing: false,
+    overflowImeComposing: false,
     plateNodes: new Map(),
     completingIds: new Set(),
     completionFallbackTimers: new Map(),
@@ -77,6 +79,8 @@
   const sanitizeText = (text) => text.replace(/[\n\r\t]/g, " ").trim();
 
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+  const isImeComposing = (event, composingFlag = false) =>
+    !!(event?.isComposing || event?.keyCode === 229 || composingFlag);
 
   const plateTypography = (diameter) => ({
     fontSizePx: clamp(Math.round(diameter * 0.11), 12, 18),
@@ -249,6 +253,7 @@
   const closeOverflowEditor = () => {
     state.overflowEditorOpen = false;
     state.overflowEditorTodoId = null;
+    state.overflowImeComposing = false;
     el.overflowEditor.classList.add("hidden");
     el.overflowEditor.setAttribute("aria-hidden", "true");
     el.overflowEditor.style.left = "";
@@ -330,6 +335,7 @@
 
   const closeInputModal = () => {
     state.inputOpen = false;
+    state.modalImeComposing = false;
     el.inputDock.classList.add("hidden");
     el.inputDock.setAttribute("aria-hidden", "true");
     el.modalInput.value = "";
@@ -422,7 +428,17 @@
       input.type = "text";
       input.maxLength = 120;
       input.value = todo.text;
+      let inlineImeComposing = false;
+      input.addEventListener("compositionstart", () => {
+        inlineImeComposing = true;
+      });
+      input.addEventListener("compositionend", () => {
+        inlineImeComposing = false;
+      });
       input.addEventListener("keydown", (event) => {
+        if (isImeComposing(event, inlineImeComposing)) {
+          return;
+        }
         if (event.key === "Enter") {
           event.preventDefault();
           commitEdit(todo.id, input.value);
@@ -828,6 +844,9 @@
   });
 
   el.modalInput.addEventListener("keydown", (event) => {
+    if (isImeComposing(event, state.modalImeComposing)) {
+      return;
+    }
     if (event.key === "Enter") {
       event.preventDefault();
       submitInputModal();
@@ -853,6 +872,9 @@
   });
 
   el.overflowEditorInput.addEventListener("keydown", (event) => {
+    if (isImeComposing(event, state.overflowImeComposing)) {
+      return;
+    }
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       submitOverflowEditor();
@@ -862,6 +884,20 @@
       event.preventDefault();
       closeOverflowEditor();
     }
+  });
+
+  el.modalInput.addEventListener("compositionstart", () => {
+    state.modalImeComposing = true;
+  });
+  el.modalInput.addEventListener("compositionend", () => {
+    state.modalImeComposing = false;
+  });
+
+  el.overflowEditorInput.addEventListener("compositionstart", () => {
+    state.overflowImeComposing = true;
+  });
+  el.overflowEditorInput.addEventListener("compositionend", () => {
+    state.overflowImeComposing = false;
   });
 
   document.addEventListener("click", (event) => {

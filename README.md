@@ -1,4 +1,4 @@
-# AoiPlate 1.1（macOS）操作手册
+# AoiPlate 1.2（macOS）操作手册
 
 AoiPlate 是一款极简、轻量的菜单栏待办应用。  
 你可以在任意界面通过双击触发键（默认 `J`）呼出“爆炸舞台”，用盘子直接管理任务。
@@ -10,6 +10,8 @@ AoiPlate 是一款极简、轻量的菜单栏待办应用。
 - 盘子大小按时间权重自动变化（越早创建越大）
 - `Cmd + 单击` 盘子：标记完成并淡出
 - 双击盘子：短文本原位编辑，长文本弹出“盘子旁圆角编辑窗”
+- 新增输入栏与旁路编辑窗升级为更精致的极繁视觉风格
+- 中文输入法组合输入时，回车优先用于输入确认，不会误触发保存
 - 右键盘子：删除
 - 按 `N`：在舞台底部打开新增输入栏
 - 按 `M`：切换爆炸模式 / 列表模式
@@ -94,7 +96,7 @@ mise trust .mise.toml
 direnv allow
 ```
 
-## 8. 生成 1.1 Release 资产
+## 8. 生成 1.2 Release 资产
 一键构建：
 ```bash
 ./scripts/build_release_assets_macos.sh
@@ -106,4 +108,4 @@ direnv allow
 - `AoiPlate-macos-arm64.tar.gz`
 - `SHA256SUMS.txt`
 
-发布到 GitHub Release 时，建议将版本号设置为：`v1.1.0`。
+发布到 GitHub Release 时，建议将版本号设置为：`v1.2.0`。
