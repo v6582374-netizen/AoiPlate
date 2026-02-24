@@ -1,0 +1,33 @@
+[package]
+name = "todo_lite"
+version = "0.1.0"
+edition = "2024"
+description = "AoiPlate: elegant macOS explosion-stage todo app"
+license = "MIT"
+
+[[bin]]
+name = "AoiPlate"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0.100"
+auto-launch = "0.6.0"
+base64 = "0.22.1"
+core-foundation = "0.10.1"
+core-graphics = "0.25.0"
+dirs = "6.0.0"
+macos-accessibility-client = "0.0.2"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+tao = "0.34.5"
+tray-icon = "0.21.3"
+uuid = { version = "1.18.1", features = ["v4", "serde"] }
+wry = { version = "0.54.2", features = ["transparent"] }
+
+[package.metadata.bundle]
+name = "AoiPlate"
+identifier = "com.shiwen.aoiplate"
+short_description = "Elegant explosion-stage todo app for macOS"
+category = "Productivity"
+osx_minimum_system_version = "14.0"
+resources = ["ui"]

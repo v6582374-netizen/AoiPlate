@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AoiPlate Stage</title>
+    <style>
+{{INLINE_STYLES}}
+    </style>
+  </head>
+  <body>
+    <div id="stage" class="stage" role="dialog" aria-label="AoiPlate Explosion Stage">
+      <main id="plateLayer" class="plate-layer" aria-live="polite"></main>
+
+      <section id="listModePanel" class="list-mode-panel hidden" aria-label="List Mode">
+        <div class="list-head">
+          <h2>全部未完成任务</h2>
+          <input id="listSearch" type="text" placeholder="搜索（预留）" disabled />
+        </div>
+        <ul id="listModeList" class="list-mode-list"></ul>
+      </section>
+
+      <div id="permissionBanner" class="permission-banner hidden">
+        <span>需要开启“输入监听”和“辅助功能”以支持全局触发。</span>
+        <button id="openPermissionButton" type="button">打开权限设置</button>
+      </div>
+
+      <div id="contextMenu" class="context-menu hidden">
+        <button id="contextDeleteButton" type="button">删除此任务</button>
+      </div>
+
+      <div id="inputModal" class="input-modal hidden" aria-hidden="true">
+        <div class="input-card">
+          <h3>新增代办</h3>
+          <input id="modalInput" type="text" maxlength="120" placeholder="输入任务后回车" />
+          <div class="input-actions">
+            <button id="modalCancelButton" type="button">取消</button>
+            <button id="modalSubmitButton" type="button">保存</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="errorToast" class="error-toast" role="status" aria-live="polite"></div>
+    </div>
+
+    <script>
+{{INLINE_SCRIPT}}
+    </script>
+  </body>
+</html>
