@@ -27,8 +27,8 @@ impl Default for AppConfig {
             launch_at_login: true,
             hide_completed: false,
             max_visible_plates: 40,
-            min_diameter_px: 120,
-            max_diameter_px: 320,
+            min_diameter_px: 84,
+            max_diameter_px: 220,
             complete_fade_ms: 700,
             input_hotkey: 'N',
             list_mode_hotkey: 'M',
@@ -50,11 +50,11 @@ impl AppConfig {
             self.max_visible_plates = 40;
         }
 
-        if self.min_diameter_px < 80 || self.min_diameter_px > 260 {
-            self.min_diameter_px = 120;
+        if self.min_diameter_px < 64 || self.min_diameter_px > 240 {
+            self.min_diameter_px = 84;
         }
-        if self.max_diameter_px < 180 || self.max_diameter_px > 520 {
-            self.max_diameter_px = 320;
+        if self.max_diameter_px < 120 || self.max_diameter_px > 420 {
+            self.max_diameter_px = 220;
         }
         if self.min_diameter_px > self.max_diameter_px {
             std::mem::swap(&mut self.min_diameter_px, &mut self.max_diameter_px);

@@ -7,8 +7,8 @@
       launch_at_login: true,
       hide_completed: false,
       max_visible_plates: 40,
-      min_diameter_px: 120,
-      max_diameter_px: 320,
+      min_diameter_px: 84,
+      max_diameter_px: 220,
       complete_fade_ms: 700,
       input_hotkey: "N",
       list_mode_hotkey: "M",
@@ -100,8 +100,11 @@
   };
 
   const buildDiameterMap = (visibleTodos) => {
-    const minDiameter = clamp(Number(state.config.min_diameter_px) || 120, 80, 280);
-    const maxDiameter = clamp(Number(state.config.max_diameter_px) || 320, 180, 520);
+    const minDiameterRaw = clamp(Number(state.config.min_diameter_px) || 84, 64, 240);
+    const maxDiameterRaw = clamp(Number(state.config.max_diameter_px) || 220, 120, 420);
+    const densityScale = 0.78;
+    const minDiameter = clamp(Math.round(minDiameterRaw * densityScale), 64, 220);
+    const maxDiameter = clamp(Math.round(maxDiameterRaw * densityScale), 110, 330);
     const low = Math.min(minDiameter, maxDiameter);
     const high = Math.max(minDiameter, maxDiameter);
 
@@ -132,11 +135,11 @@
     const centerX = width / 2;
     const centerY = height / 2;
 
-    const margin = 22;
-    const topReserved = 26;
-    const gap = 8;
+    const margin = 14;
+    const topReserved = 14;
+    const gap = 5;
     const golden = Math.PI * (3 - Math.sqrt(5));
-    const radialStep = 22;
+    const radialStep = 18;
 
     const placementOrder = [...visibleTodos].sort(
       (a, b) => (diameterById.get(b.id) || 0) - (diameterById.get(a.id) || 0),
@@ -397,7 +400,7 @@
       state.emptyPlateNode = node;
     }
 
-    const diameter = clamp((Number(state.config.min_diameter_px) || 120) + 56, 160, 240);
+    const diameter = clamp((Number(state.config.min_diameter_px) || 84) + 42, 126, 200);
     const typo = plateTypography(diameter);
     node.style.width = `${diameter}px`;
     node.style.height = `${diameter}px`;

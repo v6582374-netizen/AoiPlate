@@ -6,6 +6,8 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+pub const MAX_TODO_TEXT_CHARS: usize = 120;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TodoItem {
     pub id: String,
@@ -76,10 +78,16 @@ pub fn make_todo(text: String) -> TodoItem {
 }
 
 pub fn normalize_text(raw: &str) -> String {
-    raw.replace(['\n', '\r', '\t'], " ")
+    let normalized = raw
+        .replace(['\n', '\r', '\t'], " ")
         .split_whitespace()
         .collect::<Vec<_>>()
-        .join(" ")
+        .join(" ");
+
+    normalized
+        .chars()
+        .take(MAX_TODO_TEXT_CHARS)
+        .collect::<String>()
 }
 
 pub fn mark_completed(item: &mut TodoItem) {

@@ -55,7 +55,13 @@ cargo run
 - 或按 `Esc`
 - 或点击空白区域
 
-## 4. 数据与迁移
+## 4. 安全加固（当前版本）
+- IPC 请求体大小限制（防止异常超大消息导致资源滥用）
+- 任务文本在后端强制长度限制（最多 120 字符）
+- 任务 ID 强校验（必须为合法 UUID）
+- 前端启用严格 CSP（禁止外部脚本/连接/对象加载）
+
+## 5. 数据与迁移
 数据目录：
 - `~/Library/Application Support/AoiPlate/todos.json`
 - `~/Library/Application Support/AoiPlate/config.json`
@@ -65,7 +71,7 @@ cargo run
 - 首次启动会自动尝试将旧版 `TodoLite` 的数据迁移到 `AoiPlate`
 - 迁移失败不会阻塞启动，但会在日志里记录
 
-## 5. 常见问题
+## 6. 常见问题
 ### Q1：双击 `J` 没反应
 - 先检查“输入监听”权限是否已开启
 - 再检查菜单栏图标是否仍在（应用是否在运行）
@@ -78,7 +84,7 @@ cargo run
 - 先按 `N` 新建任务
 - 若仍无显示，退出后重新 `cargo run`
 
-## 6. 开发者命令
+## 7. 开发者命令
 ```bash
 cargo check
 cargo build --release
@@ -91,3 +97,22 @@ cd /Users/shiwen/Desktop/Todo_lite
 mise trust .mise.toml
 direnv allow
 ```
+
+## 8. 上传可执行文件（建议流程）
+构建可执行文件：
+
+```bash
+cargo build --release
+mkdir -p dist
+cp target/release/AoiPlate dist/AoiPlate-macos-arm64
+tar -czf dist/AoiPlate-macos-arm64.tar.gz -C dist AoiPlate-macos-arm64
+```
+
+如果你已经安装 `cargo-bundle`，也可生成 `.app`：
+
+```bash
+cargo install cargo-bundle
+cargo bundle --release
+```
+
+然后将 `dist/AoiPlate-macos-arm64.tar.gz`（或 `.app` 压缩包）上传到 GitHub Release 的 Assets。

@@ -6,12 +6,13 @@ use std::sync::atomic::AtomicU8;
 use std::thread;
 use std::time::Duration;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 use auto_launch::{AutoLaunch, AutoLaunchBuilder, MacOSLaunchMode};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use tao::event::{Event, WindowEvent};
 use tao::event_loop::{ControlFlow, EventLoopBuilder, EventLoopProxy};
+use uuid::Uuid;
 
 use crate::config::{AppConfig, ConfigStore, sanitize_trigger_key};
 use crate::hotkey;
@@ -26,6 +27,7 @@ const LEGACY_APP_NAME: &str = "TodoLite";
 const BUNDLE_ID: &str = "com.shiwen.aoiplate";
 const SAVE_DEBOUNCE_MS: u64 = 100;
 const HIDE_ANIMATION_MS: u64 = 210;
+const MAX_IPC_PAYLOAD_BYTES: usize = 16 * 1024;
 
 #[derive(Debug)]
 enum UserEvent {
@@ -344,6 +346,10 @@ fn handle_ipc(
     tray: &TrayController,
     logger: &ErrorLogger,
 ) -> Result<()> {
+    if raw.len() > MAX_IPC_PAYLOAD_BYTES {
+        return Err(anyhow!("ipc payload too large"));
+    }
+
     let msg: ClientMessage = serde_json::from_str(raw).context("invalid ipc payload")?;
 
     match msg.kind.as_str() {
@@ -363,6 +369,9 @@ fn handle_ipc(
         }
         "edit_todo" => {
             let payload: EditTodoPayload = serde_json::from_value(msg.payload)?;
+            if !is_valid_todo_id(&payload.id) {
+                return Ok(());
+            }
             let text = normalize_text(&payload.text);
             if text.is_empty() {
                 return Ok(());
@@ -377,6 +386,9 @@ fn handle_ipc(
         }
         "delete_todo" => {
             let payload: IdPayload = serde_json::from_value(msg.payload)?;
+            if !is_valid_todo_id(&payload.id) {
+                return Ok(());
+            }
             let before = runtime.todos.len();
             runtime.todos.retain(|todo| todo.id != payload.id);
             if runtime.todos.len() != before {
@@ -386,6 +398,9 @@ fn handle_ipc(
         }
         "complete_todo" => {
             let payload: CompleteTodoPayload = serde_json::from_value(msg.payload)?;
+            if !is_valid_todo_id(&payload.id) {
+                return Ok(());
+            }
             if mark_todo_completed(&mut runtime.todos, &payload.id) {
                 schedule_save(runtime, proxy);
                 push_state_to_ui(panel, runtime);
@@ -393,6 +408,9 @@ fn handle_ipc(
         }
         "toggle_todo" => {
             let payload: IdPayload = serde_json::from_value(msg.payload)?;
+            if !is_valid_todo_id(&payload.id) {
+                return Ok(());
+            }
             if mark_todo_completed(&mut runtime.todos, &payload.id) {
                 schedule_save(runtime, proxy);
                 push_state_to_ui(panel, runtime);
@@ -581,6 +599,13 @@ fn mark_todo_completed(todos: &mut [TodoItem], id: &str) -> bool {
         return true;
     }
     false
+}
+
+fn is_valid_todo_id(id: &str) -> bool {
+    if id.len() > 64 {
+        return false;
+    }
+    Uuid::parse_str(id).is_ok()
 }
 
 fn seeded_todos() -> Vec<TodoItem> {

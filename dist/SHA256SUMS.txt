@@ -1,0 +1,2 @@
+9343267f12e81416786273de3de74165beb4cd6428f2efd1e07cd26992f816e1  /Users/shiwen/Desktop/Todo_lite/dist/AoiPlate-macos-arm64
+31c892d23269bc12e5929f79791ad9dd1b87ae02bc2abd9ae8eff8e533337e6d  /Users/shiwen/Desktop/Todo_lite/dist/AoiPlate-macos-arm64.tar.gz
